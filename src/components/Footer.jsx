@@ -28,6 +28,7 @@ function Footer() {
             <LinkButton iconType="footer-line" alt="Facebook" />
 
             <LinkButton iconType="footer-ig" alt="Facebook" />
+            <LinkButton iconType="footer-share" alt="Facebook" />
           </div>
            <div>
             <ReviewAmout type="all" />
