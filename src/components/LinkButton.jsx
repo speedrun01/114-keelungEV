@@ -1,10 +1,92 @@
-import React from 'react'
+import React, { useState } from 'react'
 import FooterFB from "@/assets/icon/icon-fb.svg";
 import FooterIG from "@/assets/icon/icon-ig.svg";
 import FooterLine from "@/assets/icon/icon-Line.svg";
 import SiderFB from "@/assets/icon/Facebook.png";
 import SiderIG from "@/assets/icon/Instagram.png";
 import SiderLine from "@/assets/icon/Line.svg";
+import FooterShare from "@/assets/icon/icon-share.png";
+import FacebookShare from "@/assets/icon/facebook-share.svg";
+import LineShare from "@/assets/icon/line-share.svg";
+import XShare from "@/assets/icon/x-share.svg";
+import WhatsappShare from "@/assets/icon/whatsapp-share.svg";
+import TelegramShare from "@/assets/icon/telegram-share.svg";
+
+
+const ShareModal = ({ show, onClose, url }) => {
+  if (!show) return null;
+
+  // 分享選項列表
+  const shareOptions = [
+    { name: "Facebook", icon: FacebookShare, handler: () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank') },
+    { name: "Line", icon: LineShare, handler: () => window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`, '_blank') },
+    { name: "X", icon: XShare, handler: () => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}`, '_blank') },
+    { name: "WhatsApp", icon: WhatsappShare, handler: () => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(url)}`, '_blank') },
+    { name: "Telegram", icon: TelegramShare, handler: () => window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}`, '_blank') },
+  ];
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(url).then(() => {
+      alert("連結已複製！"); // 這裡可以用更優雅的 Toast 提示替換
+      onClose();
+    }).catch(err => {
+      console.error('複製失敗:', err);
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-opacity-50 z-50 flex justify-center items-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm md:max-w-md" onClick={e => e.stopPropagation()}>
+        {/* 標題與關閉按鈕 */}
+        <div className="p-4 border-b border-[#CCCCCC] my-4 mx-6 flex justify-between items-center relative">
+          <h3 className="absolute top-0 left-0 text-base font-bold text-[#1B7183]">分享</h3>
+          {/* 圖片中的 X 關閉按鈕 */}
+          <button className="absolute -top-2 -right-4 w-5 h-5 rounded-full bg-[#1B7183] flex items-center justify-center shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1e8f9b] cursor-pointer" onClick={onClose}>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        {/* 分享圖標區 */}
+        <div className="px-5 pb-5 pt-2 flex justify-between items-center space-x-2">
+          {shareOptions.map((option, index) => (
+            <button
+              key={index}
+              className="flex flex-col items-center group min-w-[60px]"
+              onClick={option.handler}
+            >
+              {/* 圖標部分：保持原圖比例和顏色 */}
+              <img src={option.icon} alt={option.name} className="w-14 h-14 cursor-pointer" />
+              <span className="text-xs mt-1 text-gray-500 group-hover:text-[#1B7183] cursor-pointer">{option.name}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* 連結與複製按鈕 */}
+        <div className="px-6 pt-0 pb-5">
+          <div className="flex border mt-2 border-gray-300 rounded-lg overflow-hidden bg-white">
+            <input
+              type="text"
+              readOnly
+              value={url}
+              className="flex-grow p-2 text-sm text-gray-500 truncate bg-transparent border-none focus:outline-none"
+            />
+            <button
+              // 圖片中的複製按鈕顏色為深綠色，使用 Tailwind 模擬
+              className="w-[60px] h-[30px] rounded-[19.79px] bg-[#1B7183] text-white px-4 text-sm font-medium transition-colors flex-shrink-0 mx-2 my-1 cursor-pointer"
+              onClick={handleCopy}
+            >
+              複製
+            </button>
+          </div>
+        </div>
+
+        <hr className={`border-t border-solid border-[#CCCCCC] mx-6 mb-6`} />
+      </div>
+    </div>
+  );
+};
 
 /**
  * LinkButton - 可重用的社群媒體連結按鈕元件
@@ -72,6 +154,10 @@ const LinkButton = ({
   onClick = null,
   children
 }) => {
+
+  // 新增 State 來控制分享彈窗的顯示
+  const [showShareModal, setShowShareModal] = useState(false);
+
   /**
    * 圖標對應表
    * @constant
@@ -84,7 +170,8 @@ const LinkButton = ({
     "footer-line": FooterLine,
     "sider-fb": SiderFB,
     "sider-ig": SiderIG,
-    "sider-line": SiderLine
+    "sider-line": SiderLine,
+    "footer-share": FooterShare
   };
 
   /**
@@ -94,6 +181,9 @@ const LinkButton = ({
    * @description 根據 iconType 從對應表中取得圖標，若找不到則使用預設的 FooterFB
    */
   const icon = iconMap[iconType] || FooterFB;
+
+  // 定義要分享的 URL
+  const SHARE_URL = "https://k-evmap.klcg.gov.tw";
   
   /**
    * 自動設定連結
@@ -101,7 +191,7 @@ const LinkButton = ({
    * @type {string}
    * @description 如果沒有提供 href，則根據圖標類型自動設定連結
    */
-  const finalHref = href || (() => {
+  const finalHref = href || (iconType === "footer-share" ? "#" : (() => {
     // 判斷是 Facebook、Line 還是 Instagram
     if (iconType.includes('fb')) {
       return 'https://www.facebook.com/ilovekeelung';
@@ -110,23 +200,50 @@ const LinkButton = ({
     } else {
       return 'https://www.instagram.com/embracekeelung/';
     }
-  })();
+  })());
+
+  /**
+   * 處理點擊事件
+   * @param {React.MouseEvent} e - 點擊事件
+   */
+  const handleClick = (e) => {
+    if (iconType === "footer-share") {
+      e.preventDefault(); // 阻止預設的連結行為
+      setShowShareModal(true); // 顯示分享彈窗
+    }
+
+    // 執行外部傳入的 onClick 函式 (如果有的話)
+    if (onClick) {
+      onClick(e);
+    }
+  };
   
   return (
-    <a 
-      href={finalHref} 
-      className={linkClass}
-      target={target}
-      rel={target === "_blank" ? "noopener noreferrer" : undefined}
-      onClick={onClick}
-    >
-      <img 
-        src={icon} 
-        alt={alt} 
-        className={`${size} ${imgClass}`} 
-      />
-      {children}
-    </a>
+    <>
+      <a 
+        href={finalHref} 
+        className={linkClass}
+        target={iconType === "footer-share" ? "_self" : target} // 分享按鈕的 target 設為 _self 或移除
+        rel={target === "_blank" ? "noopener noreferrer" : undefined}
+        onClick={handleClick} // 使用新的 handleClick 處理點擊
+      >
+        <img 
+          src={icon} 
+          alt={alt} 
+          className={`${size} ${imgClass}`} 
+        />
+        {children}
+      </a>
+      
+      {/* 渲染分享彈窗，只有在 iconType 為 footer-share 時才有用 */}
+        {iconType === "footer-share" && (
+          <ShareModal 
+            show={showShareModal} 
+            onClose={() => setShowShareModal(false)}
+            url={SHARE_URL}
+          />
+      )}
+    </>
   )
 }
 
