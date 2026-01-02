@@ -8,7 +8,7 @@ import SiderLine from "@/assets/icon/Line.svg";
 import FooterShare from "@/assets/icon/icon-share.png";
 import FacebookShare from "@/assets/icon/facebook-share.svg";
 import LineShare from "@/assets/icon/line-share.svg";
-// import XShare from "@/assets/icon/x-share.svg";
+import XShare from "@/assets/icon/twitter-share.svg";
 import WhatsappShare from "@/assets/icon/whatsapp-share.svg";
 import TelegramShare from "@/assets/icon/telegram-share.svg";
 
