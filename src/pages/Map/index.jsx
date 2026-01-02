@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import useGoogleSheet from "@/hooks/useGoogleSheet";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import {
   APIProvider,
@@ -8,6 +7,8 @@ import {
   InfoWindow,
   useMap,
 } from "@vis.gl/react-google-maps";
+import useGoogleSheetFind from "@/hooks/useGoogleSheetFind";
+
 import powerPinImg from "@/assets/img/powerpin.png";
 import { useStore } from "./MapStepSelect";
 import Loading from "@/components/Loading";
@@ -30,7 +31,6 @@ import IconLocation from "@/assets/icon/icon-location.svg";
 import "@/styles/map.css";
 
 const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-const sheetId = import.meta.env.VITE_MotorcycleShops_GogleSheet__ID;
 // 自定義聚類渲染器
 const customRenderer = {
   render: ({ count, position, cluster }) => {
@@ -93,89 +93,6 @@ const customRenderer = {
     "Gogoro睿能": GogoroLogo,
     "PGO 摩特動力": PGOLogo
   };
-
-
-// 解析基隆市機車行資料
-function parseMotorcycleShops(data) {
-  const values = data.values;
-  // 標題行在 values[1]
-  const headers = values[0];
-  const rowsData = values.slice(2); // 從第3行開始是資料
-  // 找出各欄位的索引
-  const indexes = {
-    shopName: headers.indexOf("申請單位全名*(I欄)"),
-    district: headers.indexOf("所屬行政區*(K欄)"),
-    manufacturer: headers.indexOf("車廠品牌*(M欄)"),
-    businessHours: headers.indexOf("營業時間"),
-    phone: headers.indexOf("連絡電話"),
-    address: headers.indexOf("車行登記地址*(N欄)"),
-    lat:headers.indexOf("lat"),
-    lng:headers.indexOf("lng"),
-  };
-  const shops = [];
-
-  for (const row of rowsData) {
-    // 跳過空資料或明顯是重複標示的資料
-    if (
-      !row[indexes.shopName] ||// 跳過沒有全名的資料
-      !row[indexes.businessHours] || // 跳過沒有營業時間的資料
-      !row[indexes.lat] || // 跳過沒有lat的資料
-      !row[indexes.lng]  // 跳過沒有lng的資料
-    ) {
-      continue;
-    }
-
-    const shopName = row[indexes.shopName].trim();
-    const district = row[indexes.district];
-    const businessHours = row[indexes.businessHours];
-    const phone = row[indexes.phone] || "";
-    const address = row[indexes.address] || "";
-    const lat = row[indexes.lat] || "";
-    const lng = row[indexes.lng] || "";
-
-    // 製造商處理 - 可能有多個品牌用 \n 分隔
-    let manufacturers = [];
-    if (row[indexes.manufacturer]) {
-      const manufacturerStr = row[indexes.manufacturer];
-      if (manufacturerStr.includes(",")) {
-        manufacturers = manufacturerStr
-          .split(",")
-          .map((m) => m.trim())
-          .filter((m) => m);
-      } else {
-        manufacturers = [manufacturerStr.trim()];
-      }
-    }
-
-
-
-    if ( shopName && district) {
-      shops.push({
-        店名: shopName,
-        行政區: district,
-        車廠: manufacturers,
-        營業時間: businessHours,
-        連絡電話: phone,
-        地址: address,
-        是否顯示營業時間: businessHours !== "N/A",
-        lat,
-        lng
-      });
-
-  
-    }
-  }
-
-  // 按照行政區排序
-  shops.sort((a, b) => {
-    if (a.行政區 === b.行政區) {
-      return a.店名.localeCompare(b.店名);
-    }
-    return a.行政區.localeCompare(b.行政區);
-  });
-
-  return shops;
-}
 
 // 地圖內容組件
 const MapContent = ({ markers, setSelectedShop }) => {
@@ -361,10 +278,10 @@ const MapContent = ({ markers, setSelectedShop }) => {
 };
 
 const KLVMap = () => {
-  const { data, loading, error } = useGoogleSheet({
-    range: "1.友善車行地圖",
-    sheetId,
-  });
+
+    const { data, loading, error, refetch, status, cleanToinit } =
+      useGoogleSheetFind();
+  
   const [s_isloading, set_s_isLoading] = useState(false);
   const [selectedShop, setSelectedShop] = useState(null);
   const [markers, setMarkers] = useState([]);
@@ -372,6 +289,9 @@ const KLVMap = () => {
 
   // 使用 shallow 比較訂閱 store
   const { selectedDistricts, selectedBrands } = useStore();
+  const handleSearch = (values) => {
+    refetch(values, "findmaps");
+  };
 
   // 完整的過濾邏輯，處理所有可能的篩選條件組合
   useEffect(() => {
@@ -379,7 +299,7 @@ const KLVMap = () => {
       return;
     }
 
-    const shopData = parseMotorcycleShops(data);
+    const shopData = data;
 
     if (shopData && shopData.length > 0) {
       // 直接用 lat/lng 產生 position
@@ -426,6 +346,12 @@ const KLVMap = () => {
 
     setMarkers(filtered);
   }, [selectedDistricts, selectedBrands, originalMarkers]);
+
+
+  useEffect(() => {
+    handleSearch();
+  }, []);
+
 
   if (loading || s_isloading) {
     return <Loading extraText="首次加載，會需要較長時間" />;
