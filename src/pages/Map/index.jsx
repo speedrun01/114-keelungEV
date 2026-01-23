@@ -379,6 +379,7 @@ const KLVMap = () => {
     background: "white",
     overflow: "hidden",
   };
+  console.log(selectedShop)
   return (
     <div className="flex justify-center p-4">
       <div style={containerStyle}>
@@ -480,10 +481,10 @@ const KLVMap = () => {
                           {selectedShop.地址}
                         </div>
                       )}
-                      {selectedShop.連絡電話 && (
+                      {selectedShop.聯絡電話 && (
                         <div className="flex text-sm  font-normal text-[#6D6D6D] items-center">
                           <img src={IconCall} alt="電話" className="w-5 h-5 mr-2" />
-                          {selectedShop.連絡電話}
+                          {selectedShop.聯絡電話}
                         </div>
                       )}
                     <div className="flex justify-center mt-6">
